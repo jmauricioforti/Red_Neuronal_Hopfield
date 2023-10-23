@@ -1,0 +1,94 @@
+import numpy as np
+import matplotlib.pyplot as plt
+
+
+# Entrena una red de Hopfield
+def train_hopfield(patterns):
+    n = patterns[0].size
+    W = np.zeros((n, n))
+    for pattern in patterns:
+        bipolar_pattern = 2 * pattern.flatten() - 1
+        W += np.outer(bipolar_pattern, bipolar_pattern)
+    np.fill_diagonal(W, 0)
+    return W
+# Recupera un patrón almacenado en la red basado en un patrón de entrada.
+def recall(W, input_pattern):
+    bipolar = 2 * input_pattern.flatten() - 1
+    s = np.sign(W @ bipolar)
+    return (s + 1) // 2
+# Crea multiples patrones deplazados en los eje x e y
+def generate_displaced_pattern(anillo_coords, dx, dy):
+    pattern = np.zeros((10, 10))
+    for x, y in anillo_coords:
+        if 0 <= x + dx < 10 and 0 <= y + dy < 10:
+            pattern[x + dx, y + dy] = 1
+    return pattern
+#Calcula la distancia entre dos patrones
+def distance(pattern1, pattern2):
+        return np.sum(pattern1 != pattern2)
+# Compara el patrón de entrada con los patrones aprendidos y devuelve el desplazamiento en X e Y
+def test_pattern(W, test_matrix):
+        recalled_pattern = recall(W, test_matrix)
+    min_distance = float('inf')
+    best_match_idx = -1
+    
+    for i, pattern in enumerate(patterns):
+        d = distance(recalled_pattern, pattern.flatten())
+        if d < min_distance:
+            min_distance = d
+            best_match_idx = i
+            
+    if best_match_idx != -1:
+        dx = best_match_idx // 11 - 4
+        dy = best_match_idx % 11 - 4
+        return dx, dy
+    return None, None
+
+
+# Anillo patron
+anillo_coords = [
+    (2, 1), (2, 2), (2, 3), (2, 4), (2, 5), (3, 0), (3, 1),
+    (3, 2), (3, 3), (3, 4), (3, 5), (3, 6), (4, 0), (4, 1),
+    (4, 5), (4, 6), (5, 0), (5, 1), (5, 5), (5, 6), (6, 0),
+    (6, 1), (6, 5), (6, 6), (7, 0), (7, 1), (7, 2), (7, 3),
+    (7, 4), (7, 5), (7, 6), (8, 1), (8, 2), (8, 3), (8, 4), (5, 3)
+]
+
+# Coordenadas fijas
+reference_coords = [(0, 8), (0, 9), (1, 9)]
+
+patterns = []
+for dx in range(-4, 6):
+    for dy in range(-4, 6):
+        pattern = np.zeros((10, 10))
+        
+        for ref_coord in reference_coords:
+            pattern[ref_coord] = 1
+        for x, y in anillo_coords:
+            if 0 <= x + dx < 10 and 0 <= y + dy < 10:
+                pattern[x + dx, y + dy] = 1
+        patterns.append(pattern)
+
+test_matrix = np.array([
+    [0, 0, 0, 0, 0, 0, 0, 0, 1, 1],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 1, 1, 1, 1, 1, 0, 0],
+    [0, 0, 1, 1, 1, 1, 1, 1, 1, 0],
+    [0, 0, 1, 1, 0, 0, 0, 1, 1, 0],
+    [0, 0, 1, 1, 0, 1, 0, 1, 1, 0],
+    [0, 0, 1, 1, 0, 0, 0, 1, 1, 0],
+    [0, 0, 1, 1, 1, 1, 1, 1, 1, 0],
+    [0, 0, 0, 1, 1, 1, 1, 1, 0, 0]
+])
+
+dx, dy = test_pattern(W, test_matrix)
+
+# Muestra la matriz de prueba y su desplazamiento
+plt.imshow(test_matrix, cmap="gray")
+if dx is not None and dy is not None:
+    plt.title(f"Desplazamiento en Y: {dy}, Desplazamiento en X: {dx}")
+else:
+    plt.title("No se encontró coincidencia con los patrones aprendidos")
+plt.colorbar()
+plt.show()
